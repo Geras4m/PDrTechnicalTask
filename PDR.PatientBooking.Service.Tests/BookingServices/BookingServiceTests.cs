@@ -8,6 +8,7 @@ using PDR.PatientBooking.Data;
 using PDR.PatientBooking.Data.Models;
 using PDR.PatientBooking.Service.BookingServices;
 using PDR.PatientBooking.Service.BookingServices.Requests;
+using PDR.PatientBooking.Service.BookingServices.Responses;
 using PDR.PatientBooking.Service.BookingServices.Validation;
 using PDR.PatientBooking.Service.Validation;
 using System;
@@ -152,11 +153,53 @@ namespace PDR.PatientBooking.Service.Tests.BookingServices
             }
         }
 
+        [Test]
+        public void GetPatientNextBooking_GetsNextActiveBooking()
+        {
+            //arrange
+            var booking = _fixture.Build<Order>()
+                .With(o => o.Status, 0)
+                .Create();
+            _context.Add(booking);
+            _context.SaveChanges();
+
+            var expected = new GetNextBookingResponse
+            {
+                Id = booking.Id,
+                StartTime = booking.StartTime,
+                EndTime = booking.EndTime,
+                DoctorId = booking.DoctorId
+            };
+
+            //act
+            var result = _bookingService.GetPatientNextBooking(booking.PatientId);
+
+            //assert
+            using (new AssertionScope())
+            {
+                result.Should().BeEquivalentTo(expected);
+            }
+        }
+
+        [TestCase(55555)]
+        public void GetPatientNextBooking_WrongPatientId_ThrowsArgumentException(long patientId)
+        {
+            //arrange            
+
+            //act
+            var exception = Assert.Throws<ArgumentException>(() => _bookingService.GetPatientNextBooking(patientId));
+
+            //assert
+            using (new AssertionScope())
+            {
+                exception.Should().BeOfType(typeof(ArgumentException));
+            }
+        }
+
         [TearDown]
         public void TearDown()
         {
             _context.Database.EnsureDeleted();
         }
-
     }
 }
